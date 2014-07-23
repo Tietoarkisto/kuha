@@ -14,6 +14,7 @@ def clean_oai_settings(settings):
         admin_emails
         deleted_records
         item_list_limit
+        logging_config
         repository_descriptions
         repository_name
         sqlalchemy.url
@@ -32,6 +33,7 @@ def clean_oai_settings(settings):
         'admin_emails': _clean_admin_emails,
         'deleted_records': _clean_deleted_records,
         'item_list_limit': _clean_item_list_limit,
+        'logging_config': _clean_unicode,
         'repository_descriptions': _load_repository_descriptions,
         'repository_name': _clean_unicode,
         'sqlalchemy.url': _clean_unicode,
@@ -47,6 +49,7 @@ def clean_importer_settings(settings):
     types. Required settings are:
         deleted_records
         force_update
+        logging_config
         sqlalchemy.url
         timestamp_file
         metadata_provider_class
@@ -65,6 +68,7 @@ def clean_importer_settings(settings):
     cleaners = {
         'deleted_records': _clean_deleted_records,
         'force_update': _clean_force_update,
+        'logging_config': _clean_unicode,
         'sqlalchemy.url': _clean_unicode,
         'timestamp_file': _clean_unicode,
         'metadata_provider_args': _clean_unicode,
