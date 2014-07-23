@@ -1,0 +1,8 @@
+<OAI-PMH metal:use-macro="load: oaipmh.pt">
+    <ListSets metal:fill-slot="content">
+        <set tal:repeat="set sets">
+            <setSpec tal:content="set.spec"/>
+            <setName tal:content="set.name"/>
+        </set>
+    </ListSets>
+</OAI-PMH>

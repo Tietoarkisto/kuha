@@ -1,0 +1,12 @@
+syntax: regexp
+.*\.pyc$
+.*\.sqlite$
+^\.coverage$
+^\.noseids$
+^build/.*
+^dist/.*
+^env/.*
+^Kuha\.egg-info$
+^last_update$
+^setuptools-[0-9\.]+-py[0-9\.]+\.egg$
+^setuptools-[0-9\.]+\.zip$

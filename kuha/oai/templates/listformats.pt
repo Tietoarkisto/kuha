@@ -1,0 +1,9 @@
+<OAI-PMH metal:use-macro="load: oaipmh.pt">
+    <ListMetadataFormats metal:fill-slot="content">
+        <metadataFormat tal:repeat="item formats">
+            <metadataPrefix tal:content="item.prefix"/>
+            <schema tal:content="item.schema"/>
+            <metadataNamespace tal:content="item.namespace"/>
+        </metadataFormat>
+    </ListMetadataFormats>
+</OAI-PMH>

@@ -1,0 +1,8 @@
+<OAI-PMH metal:use-macro="load: oaipmh.pt">
+    <ListIdentifiers metal:fill-slot="content">
+        <header tal:repeat="record records"
+                metal:use-macro="load: header.pt"/>
+        <resumptionToken tal:condition="token is not None"
+                         tal:content="token"/>
+    </ListIdentifiers>
+</OAI-PMH>

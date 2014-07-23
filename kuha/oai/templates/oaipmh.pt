@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<OAI-PMH xmlns="http://www.openarchives.org/OAI/2.0/"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://www.openarchives.org/OAI/2.0/
+         http://www.openarchives.org/OAI/2.0/OAI-PMH.xsd"
+         metal:define-macro="oaipmh">
+    <responseDate tal:content="format_date(time)"/>
+    <request metal:define-slot="request"
+             tal:attributes="request.params"
+             tal:content="request.path_url"/>
+    <Verb metal:define-slot="content"/>
+</OAI-PMH>

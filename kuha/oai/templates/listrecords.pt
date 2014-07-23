@@ -1,0 +1,11 @@
+<OAI-PMH metal:use-macro="load: oaipmh.pt">
+    <ListRecords metal:fill-slot="content">
+        <record tal:repeat="record records">
+            <header metal:use-macro="load: header.pt"/>
+            <metadata tal:condition="not record.deleted"
+                      tal:content="structure record.xml"/>
+        </record>
+        <resumptionToken tal:condition="token is not None"
+                         tal:content="token"/>
+    </ListRecords>
+</OAI-PMH>

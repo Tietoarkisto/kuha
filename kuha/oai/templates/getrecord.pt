@@ -1,0 +1,9 @@
+<OAI-PMH metal:use-macro="load: oaipmh.pt">
+    <GetRecord metal:fill-slot="content">
+        <record>
+            <header metal:use-macro="load: header.pt"/>
+            <metadata tal:condition="not record.deleted"
+                      tal:content="structure record.xml"/>
+        </record>
+    </GetRecord>
+</OAI-PMH>

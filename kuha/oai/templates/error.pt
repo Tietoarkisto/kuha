@@ -1,0 +1,7 @@
+<OAI-PMH metal:use-macro="load: oaipmh.pt">
+    <request metal:fill-slot="request"
+             tal:content="request.path_url"/>
+    <error metal:fill-slot="content"
+           code="${error.code()}"
+           tal:content="error.message()"/>
+</OAI-PMH>

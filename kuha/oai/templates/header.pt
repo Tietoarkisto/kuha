@@ -1,0 +1,6 @@
+<header tal:attributes="status 'deleted' if record.deleted else None"
+        metal:define-macro="header">
+    <identifier tal:content="record.identifier"/>
+    <datestamp tal:content="format_date(record.datestamp)"/>
+    <setSpec tal:repeat="set record.set_specs" tal:content="set"/>
+</header>

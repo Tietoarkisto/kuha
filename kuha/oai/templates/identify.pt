@@ -1,0 +1,14 @@
+<OAI-PMH metal:use-macro="load: oaipmh.pt">
+    <Identify metal:fill-slot="content">
+        <repositoryName tal:content="repository_name"/>
+        <baseURL tal:content="request.path_url"/>
+        <protocolVersion>2.0</protocolVersion>
+        <adminEmail tal:repeat="email admin_emails"
+                    tal:content="email"/>
+        <earliestDatestamp tal:content="format_date(earliest)"/>
+        <deletedRecord tal:content="deleted_records"/>
+        <granularity>YYYY-MM-DDThh:mm:ssZ</granularity>
+        <description tal:repeat="d repository_descriptions"
+                     tal:content="structure d"/>
+    </Identify>
+</OAI-PMH>
