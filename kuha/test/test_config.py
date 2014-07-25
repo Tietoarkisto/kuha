@@ -47,15 +47,20 @@ class TestCleanSettings(unittest.TestCase):
 class TestCleanAdminEmails(unittest.TestCase):
 
     def test_valid_emails(self):
-        emails = '''
+        emails = u'''
             leet@example.org
             admin@test.org
             asd@asd.asd
-        '''
+            ä"@"#*'"\\"\\"ää@ööÖÖ.Ä
+        '''.encode('utf-8')
         result = config._clean_admin_emails(emails)
         self.assertEqual(
             result,
-            [u'leet@example.org', u'admin@test.org', u'asd@asd.asd']
+            [u'leet@example.org',
+             u'admin@test.org',
+             u'asd@asd.asd',
+             u'ä"@"#*\'"\\"\\"ää@ööÖÖ.Ä',
+            ]
         )
         for r in result:
             self.assertIs(type(r), unicode)
@@ -115,11 +120,16 @@ class TestCleanUnicode(unittest.TestCase):
         cases = [
             ('text', u'text'),
             (u'arsdÄÖOä', u'arsdÄÖOä'),
+            (u'ÄÖä'.encode('utf-8'), u'ÄÖä'),
         ]
         for input_, expected in cases:
             actual = config._clean_unicode(input_)
             self.assertEqual(actual, expected)
             self.assertIs(type(actual), unicode)
+
+    def test_invalid_encoding(self):
+        with self.assertRaises(UnicodeError):
+            config._clean_unicode('\xFA')
 
 
 class TestCleanProviderClass(unittest.TestCase):

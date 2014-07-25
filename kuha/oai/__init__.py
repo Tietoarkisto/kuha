@@ -6,9 +6,12 @@ from pyramid.paster import setup_logging
 from ..config import clean_oai_settings
 from ..models import create_engine, ensure_oai_dc_exists
 
-def main(global_config, **settings):
+def main(global_config, **app_config):
     """ This function returns a Pyramid WSGI application.
     """
+    settings = {}
+    settings.update(global_config)
+    settings.update(app_config)
     clean_oai_settings(settings)
 
     setup_logging(settings['logging_config'])

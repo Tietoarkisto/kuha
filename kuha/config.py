@@ -114,26 +114,28 @@ def _clean_settings(settings, cleaners):
 def _clean_admin_emails(value):
     """Check that the value is a list of valid email addresses."""
     # email regex pattern defined in the OAI-PMH XML schema
-    pattern = re.compile(r'^\S+@(\S+\.)+\S+$')
+    pattern = re.compile(r'^\S+@(\S+\.)+\S+$', flags=re.UNICODE)
 
-    emails = unicode(value).split()
+    emails = _clean_unicode(value).split()
     if not emails:
         raise ValueError('no emails')
     for email in emails:
         if re.match(pattern, email) is None:
-            raise ValueError('invalid email address: "{0}"'.format(email))
+            raise ValueError(
+                'invalid email address: {0}'
+                ''.format(repr(email))
+            )
     return emails
 
 
 def _clean_deleted_records(value):
     """Check that value is one of "no", "transient", "persistent"."""
-    allowed_values = [u'no', u'transient', u'persistent']
-    value = unicode(value)
+    allowed_values = ['no', 'transient', 'persistent']
     if value not in allowed_values:
         raise ValueError('deleted_records must be one of {0}'.format(
             allowed_values
         ))
-    return value
+    return unicode(value)
 
 
 def _clean_force_update(value):
@@ -151,7 +153,10 @@ def _clean_item_list_limit(value):
 
 def _clean_unicode(value):
     """Return the value as a unicode."""
-    return unicode(value)
+    if isinstance(value, str):
+        return value.decode('utf-8')
+    else:
+        return unicode(value)
 
 
 def _clean_provider_class(value):
@@ -176,8 +181,8 @@ def _load_repository_descriptions(value):
             doc = etree.fromstring(contents.encode('utf-8'))
         except Exception as error:
             raise ValueError(
-                'ill-formed XML in repository description "{0}": '
-                '{1}'.format(path, error)
+                'ill-formed XML in repository description {0}: '
+                '{1}'.format(repr(path), error)
             )
 
         xsi_ns = 'http://www.w3.org/2001/XMLSchema-instance'
