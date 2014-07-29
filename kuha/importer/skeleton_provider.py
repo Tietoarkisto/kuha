@@ -1,6 +1,6 @@
 class SkeletonProvider(object):
     """
-    Provider 
+    A skeleton of a metadata provider.
     """
 
     def __init__(self, *args):
