@@ -1,4 +1,29 @@
 import datetime
+import re
+
+# A regex which matches characters that are not legal in XML.
+# http://www.w3.org/TR/REC-xml/#charsets
+_XML_ILLEGAL_CHARACTERS = re.compile(u'['
+    u'\u0000-\u0008'
+    u'\u000b-\u000c'
+    u'\u000e-\u001f'
+    u'\ud800-\udfff'
+    u'\ufffe-\uffff'
+u']')
+def filter_illegal_chars(text):
+    """Remove unicode characters that are illegal in XML.
+
+    Parameters
+    ----------
+    text: unicode
+        Text to filter.
+
+    Return
+    ------
+    unicode:
+        Filtered text.
+    """
+    return _XML_ILLEGAL_CHARACTERS.sub(u'', text)
 
 
 def datestamp_now():

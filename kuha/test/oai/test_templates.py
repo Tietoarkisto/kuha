@@ -8,6 +8,10 @@ from pyramid.renderers import render, get_renderer
 
 from ..schema import master_schema
 
+from ...util import (
+    format_datestamp,
+    filter_illegal_chars,
+)
 from ...exception import (
     BadArgument,
     ExpiredResumptionToken,
@@ -91,11 +95,6 @@ def parse_response(text):
     return etree.fromstring(text.encode('utf-8'), parser)
 
 
-def format_datestamp(date):
-    """The datestamp format function passed to the templates."""
-    return date.strftime('%Y-%m-%dT%H:%M:%SZ')
-
-
 class TestErrorTemplate(unittest.TestCase):
     """Test the rendering of OAI-PMH errors."""
 
@@ -110,6 +109,7 @@ class TestErrorTemplate(unittest.TestCase):
         params = {
             'time': datetime(2013, 12, 24, 13, 45, 0),
             'format_date': format_datestamp,
+            'filter_illegal_chars': filter_illegal_chars,
             'error': error,
         }
 
@@ -149,6 +149,10 @@ class TestErrorTemplate(unittest.TestCase):
             'Some error message. </error>'
         )
 
+    def test_invalid_xml_chars(self):
+        identifier = u'\u0000 \u000b \ud888 \uffff'
+        tree = self.check_error_code(IdDoesNotExist(identifier), 'idDoesNotExist')
+
     def test_error_objects(self):
         """All OAI exceptions should be properly rendered."""
         errors = [
@@ -181,6 +185,7 @@ class OaiTemplateTest(unittest.TestCase):
         self.values = {
             'time': datetime(2013, 12, 24, 13, 45, 0),
             'format_date': format_datestamp,
+            'filter_illegal_chars': filter_illegal_chars,
         }
 
     def render_template(self, values):

@@ -1,3 +1,5 @@
+from .util import filter_illegal_chars
+
 class ConfigurationError(Exception):
     """Invalid settings in configuration file."""
 
@@ -32,7 +34,7 @@ class BadArgument(OaiException):
     """Illegal or missing arguments"""
 
     def __init__(self, message):
-        self._message = message
+        self._message = filter_illegal_chars(message)
 
     def code(self):
         return u'badArgument'
@@ -89,9 +91,9 @@ class CannotDisseminateFormat(OaiException):
 
 class UnsupportedMetadataFormat(CannotDisseminateFormat):
     def __init__(self, prefix):
-        self._message = (
-            u'Metadata format "%s" is not supported by this repository.' %
-            prefix
+        self._message = filter_illegal_chars(
+            u'Metadata format "{0}" is not supported by this repository.'
+            u''.format(prefix)
         )
 
     def message(self):
@@ -100,9 +102,9 @@ class UnsupportedMetadataFormat(CannotDisseminateFormat):
 
 class UnavailableMetadataFormat(CannotDisseminateFormat):
     def __init__(self, prefix, identifier):
-        self._message = (
-            u'Metadata format "%s" is not available for item "%s".' %
-            (prefix, identifier)
+        self._message = filter_illegal_chars(
+            u'Metadata format "{0}" is not available for item "{1}".'
+            u''.format(prefix, identifier)
         )
 
     def message(self):
@@ -113,7 +115,10 @@ class IdDoesNotExist(OaiException):
     """Illegal of unknown item identifier"""
 
     def __init__(self, identifier):
-        self._message = u'Identifier "%s" does not exist.' % identifier
+        self._message = filter_illegal_chars(
+            u'Identifier "{0}" does not exist.'
+            u''.format(identifier)
+        )
 
     def code(self):
         return u'idDoesNotExist'
@@ -136,9 +141,9 @@ class NoMetadataFormats(OaiException):
     """There are no supported metadata formats for an item"""
 
     def __init__(self, identifier):
-        self._message = (
-            u'No metadata formats available for item "%s".' %
-            identifier
+        self._message = filter_illegal_chars(
+            u'No metadata formats available for item "%s".'
+            u''.format(identifier)
         )
 
     def code(self):
