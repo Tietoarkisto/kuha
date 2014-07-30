@@ -26,6 +26,22 @@ def filter_illegal_chars(text):
     return _XML_ILLEGAL_CHARACTERS.sub(u'', text)
 
 
+def contains_illegal_chars(text):
+    """Check wheter the text is contains illegal characters.
+
+    Parameters
+    ----------
+    text: unicode
+        Text to check.
+
+    Return
+    ------
+    bool:
+        True, if the text contains illegal characters. Otherwise False.
+    """
+    return _XML_ILLEGAL_CHARACTERS.search(text) is not None
+
+
 def datestamp_now():
     """Create a datestamp of the current time at second granularity.
 

@@ -10,6 +10,7 @@ from ..util import (
     datestamp_now,
     format_datestamp,
     parse_date,
+    contains_illegal_chars,
 )
 
 from ..models import (
@@ -250,13 +251,25 @@ def _check_params(params, required=[], allowed=[]):
     if hasattr(params, 'getall') and len(params.getall(u'verb')) > 1:
         raise exception.RepeatedVerb()
 
-    for p in params:
-        # Check for illegal arguments.
-        if (p != u'verb') and (p not in allowed) and (p not in required):
-            raise exception.BadArgument(u'Illegal argument: "%s"' % p)
-        # Check for repeated arguments.
-        if hasattr(params, 'getall') and len(params.getall(p)) > 1:
-            raise exception.BadArgument(u'Repeated argument: "%s"' % p)
+    for name in params:
+        is_expected = (
+            (name == u'verb') or
+            (name in allowed) or
+            (name in required)
+        )
+        if not is_expected:
+            raise exception.BadArgument(u'Illegal argument: "%s"' % name)
+
+        is_repeated = (
+            hasattr(params, 'getall') and
+            len(params.getall(name)) > 1
+        )
+        if is_repeated:
+            raise exception.BadArgument(u'Repeated argument: "%s"' % name)
+
+        value = params.get(name)
+        if value is not None and contains_illegal_chars(value):
+            raise exception.BadArgument(u'Invalid argument: "%s"' % name)
 
     # Check required arguments.
     for p in required:

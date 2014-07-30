@@ -678,6 +678,18 @@ class TestCheckParams(unittest.TestCase):
                           views._check_params,
                           MultiDict(verb='a', invalid='b'))
 
+    def test_control_characters(self):
+        with self.assertRaises(BadArgument):
+            views._check_params(MultiDict(
+                verb=u'ListMetadataFormats',
+                identifier=u'oai:example.org:item\u0000garbage'
+            ), allowed=['identifier'])
+        with self.assertRaises(BadArgument):
+            params = MultiDict(verb=u'ListRecords')
+            params[u'metadataPrefix\u0000asd'] = u'oai_dc'
+            views._check_params(params, allowed=['metadataPrefix'])
+        with self.assertRaises(BadArgument):
+            views._check_params(MultiDict(verb=u'List\uffffRecords'))
 
 class TestParseFromAndUntil(unittest.TestCase):
 
