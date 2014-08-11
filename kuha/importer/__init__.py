@@ -80,17 +80,24 @@ def main(argv=sys.argv):
     setup_logging(settings['logging_config'])
     log = logging.getLogger(__name__)
 
-    create_engine(settings)
-    ensure_oai_dc_exists()
+    purge = settings['deleted_records'] == 'no'
+    dry_run = settings['dry_run']
+
+    if dry_run:
+        log.info('Starting metadata import (dry run)...')
+    else:
+        log.info('Starting metadata import...')
 
     timestamp_file = settings['timestamp_file']
     old_timestamp = (None if settings['force_update'] else
                      read_timestamp(timestamp_file))
 
-    purge = settings['deleted_records'] == 'no'
-
     # Get timestamp before harvest.
     new_timestamp = datestamp_now()
+
+    create_engine(settings)
+    if not dry_run:
+        ensure_oai_dc_exists()
 
     log.debug('Loading the metadata provider...')
     try:
@@ -111,7 +118,7 @@ def main(argv=sys.argv):
 
     log.debug('Harvesting metadata...')
     try:
-        update(metadata_provider, old_timestamp, purge)
+        update(metadata_provider, old_timestamp, purge, dry_run)
     except HarvestError as error:
         log.critical(
             'Failed to harvest metadata: {0}'
@@ -119,6 +126,7 @@ def main(argv=sys.argv):
         )
         raise
 
-    write_timestamp(timestamp_file, new_timestamp)
+    if not dry_run:
+        write_timestamp(timestamp_file, new_timestamp)
 
     log.info('Done.')

@@ -90,16 +90,16 @@ class TestCleanDeletedRecords(unittest.TestCase):
                           u'asd')
 
 
-class TestCleanForceUpdate(unittest.TestCase):
+class TestCleanBoolean(unittest.TestCase):
 
-    def test_force_update_on(self):
+    def test_true(self):
         for value in ['y', 'Y', '1', 'yes', 'Yes', 'YES',
                       'true', 'True', 'TRUE', 'on', 'On', 'ON']:
-            self.assertIs(config._clean_force_update(value), True)
+            self.assertIs(config._clean_boolean(value), True)
 
-    def test_force_update_off(self):
+    def test_false(self):
         for value in ['no', 'false', 'off', '']:
-            self.assertIs(config._clean_force_update(value), False)
+            self.assertIs(config._clean_boolean(value), False)
 
 
 class TestCleanItemListLimit(unittest.TestCase):
@@ -151,6 +151,7 @@ class TestCleanProviderClass(unittest.TestCase):
         for value in values:
             with self.assertRaises(ValueError):
                 config._clean_provider_class(value)
+
 
 class TestLoadRepositoryDescriptions(unittest.TestCase):
 

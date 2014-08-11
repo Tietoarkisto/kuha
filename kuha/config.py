@@ -48,6 +48,7 @@ def clean_importer_settings(settings):
     settings dictionary and have valid values. Convert them to correct
     types. Required settings are:
         deleted_records
+        dry_run
         force_update
         logging_config
         sqlalchemy.url
@@ -67,7 +68,8 @@ def clean_importer_settings(settings):
     """
     cleaners = {
         'deleted_records': _clean_deleted_records,
-        'force_update': _clean_force_update,
+        'dry_run': _clean_boolean,
+        'force_update': _clean_boolean,
         'logging_config': _clean_unicode,
         'sqlalchemy.url': _clean_unicode,
         'timestamp_file': _clean_unicode,
@@ -138,7 +140,7 @@ def _clean_deleted_records(value):
     return unicode(value)
 
 
-def _clean_force_update(value):
+def _clean_boolean(value):
     """Return the value as a bool."""
     return asbool(value)
 

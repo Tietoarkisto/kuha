@@ -43,8 +43,9 @@ class TestUpdateFormats(unittest.TestCase):
         with LogCapture(harvest) as log:
             with mock.patch.object(harvest, 'models') as models:
                 models.Format.list.return_value = [oai_dc_mock, ead_mock]
-                harvest.update_formats(provider, purge=True)
+                new_prefixes = harvest.update_formats(provider, purge=True)
 
+        self.assertItemsEqual(new_prefixes, formats.keys())
         self.assertEqual(oai_dc_mock.mark_as_deleted.mock_calls, [])
         ead_mock.mark_as_deleted.assert_called_once_with()
         models.Format.list.assert_called_once_with(ignore_deleted=True)
@@ -81,19 +82,36 @@ class TestUpdateFormats(unittest.TestCase):
         provider.formats.return_value = {'prefix': 'invalid'}
         self.assertRaises(HarvestError, harvest.update_formats, provider)
 
+    def test_dry_run(self):
+        provider = mock.Mock()
+        provider.formats.return_value = {'oai_dc': ('namespace', 'schema')}
+
+        with LogCapture(harvest) as log:
+            with mock.patch.object(harvest, 'models') as models:
+                models.Format.list.return_value = []
+                harvest.update_formats(provider, purge=True, dry_run=True)
+
+        self.assertEqual(models.Format.create_or_update.mock_calls, [])
+        self.assertEqual(models.purge_deleted.mock_calls, [])
+        self.assertEqual(models.commit.mock_calls, [])
+
+        log.assert_emitted('Removed 0 formats and added 1 format.')
+
 
 class TestUpdateItems(unittest.TestCase):
 
     def test_successful_update(self):
+        identifiers = ['asd', u'U', 'a:b']
         provider = mock.Mock()
-        provider.identifiers.return_value = ['asd', u'U', 'a:b']
+        provider.identifiers.return_value = identifiers
         item_mocks = [make_item(u'1234'), make_item(u'asd')]
 
         with LogCapture(harvest) as log:
             with mock.patch.object(harvest, 'models') as models:
                 models.Item.list.return_value = item_mocks
-                harvest.update_items(provider, purge=True)
+                new_ids = harvest.update_items(provider, purge=True)
 
+        self.assertItemsEqual(new_ids, identifiers)
         provider.identifiers.assert_called_once_with()
         item_mocks[0].mark_as_deleted.assert_called_once_with()
         self.assertEqual(item_mocks[1].mark_as_deleted.mock_calls, [])
@@ -131,11 +149,12 @@ class TestUpdateItems(unittest.TestCase):
 
         with mock.patch.object(harvest, 'models') as models:
             models.Item.list.return_value = []
-            harvest.update_items(provider, purge=False)
+            new_ids = harvest.update_items(provider, purge=False)
         self.assertItemsEqual(
             models.Item.create_or_update.mock_calls,
             [mock.call(i) for i in ['i1', 'i2', 'i3']]
         )
+        self.assertItemsEqual(new_ids, ['i1', 'i2', 'i3'])
 
     def test_invalid_identifiers(self):
         class InvalidId(object):
@@ -152,12 +171,29 @@ class TestUpdateItems(unittest.TestCase):
                 harvest.update_items(provider)
         self.assertIn('conversion failed', cm.exception.message)
 
+    def test_dry_run(self):
+        provider = mock.Mock()
+        provider.identifiers.return_value = ['asd']
+        item_mock = make_item(u'1234')
+
+        with LogCapture(harvest) as log:
+            with mock.patch.object(harvest, 'models') as models:
+                models.Item.list.return_value = [item_mock]
+                harvest.update_items(provider, purge=True, dry_run=True)
+
+        self.assertEqual(models.Item.create_or_update.mock_calls, [])
+        self.assertEqual(models.purge_deleted.mock_calls, [])
+        self.assertEqual(models.commit.mock_calls, [])
+        self.assertEqual(item_mock.mark_as_deleted.mock_calls, [])
+
+        log.assert_emitted('Removed 1 item and added 1 item.')
+
 
 class TestUpdateRecords(unittest.TestCase):
 
     def test_successful_harvest(self):
-        formats = map(make_format, [u'ead', u'oai_dc'])
-        identifiers = [make_item(u'item{0}'.format(i)) for i in xrange(4)]
+        prefixes = [u'ead', u'oai_dc']
+        identifiers = [u'item{0}'.format(i) for i in xrange(4)]
         time = datetime(2014, 2, 4, 10, 54, 27)
 
         provider = mock.Mock()
@@ -170,9 +206,8 @@ class TestUpdateRecords(unittest.TestCase):
             with mock.patch.object(harvest, 'models') as models:
                 with mock.patch.object(harvest, 'update_sets') as (
                         update_sets_mock):
-                    models.Format.list.return_value = formats
-                    models.Item.list.return_value = identifiers
-                    harvest.update_records(provider, time)
+                    harvest.update_records(
+                        provider, identifiers, prefixes, time)
 
         self.assertItemsEqual(
             provider.get_record.mock_calls,
@@ -182,7 +217,7 @@ class TestUpdateRecords(unittest.TestCase):
         )
         self.assertItemsEqual(
             update_sets_mock.mock_calls,
-            [mock.call(provider, id_)
+            [mock.call(provider, id_, False)
              for id_ in [u'item0', u'item1', u'item3']],
         )
         self.assertItemsEqual(
@@ -199,16 +234,15 @@ class TestUpdateRecords(unittest.TestCase):
         log.assert_emitted('Updated 6 records.')
 
     def test_no_time(self):
-        formats = [make_format(u'oai_dc')]
-        items = [make_item(u'oai:test:id')]
+        prefixes = [u'oai_dc']
+        items = [u'oai:test:id']
         provider = mock.Mock()
         provider.get_record.return_value = '<oai_dc:dc>...</oai_dc:dc>'
 
         with mock.patch.object(harvest, 'update_sets'):
             with mock.patch.object(harvest, 'models') as models:
-                models.Format.list.return_value = formats
-                models.Item.list.return_value = items
-                harvest.update_records(provider, since=None)
+                harvest.update_records(
+                    provider, items, prefixes, since=None)
 
         self.assertEqual(provider.has_changed.mock_calls, [])
         provider.get_record.assert_called_once_with(
@@ -218,16 +252,13 @@ class TestUpdateRecords(unittest.TestCase):
         provider = mock.Mock()
         time = datetime(2014, 2, 4, 10, 54, 27)
         with mock.patch.object(harvest, 'models') as models:
-            models.Item.list.return_value = []
-            models.Format.list.return_value = [make_format(u'ead')]
-            harvest.update_records(provider, since=time)
+            harvest.update_records(provider, [], [u'ead'], since=time)
         self.assertEqual(provider.has_changed.mock_calls, [])
         self.assertEqual(provider.get_record.mock_calls, [])
         self.assertEqual(models.commit.mock_calls, [])
 
     def test_harvest_fails(self):
-        items = map(make_item, ['id1', 'id2'])
-        formats = [make_format(u'ead')]
+        items = ['id1', 'id2']
         xml = 'data'
 
         def get_record(id_, prefix):
@@ -240,10 +271,8 @@ class TestUpdateRecords(unittest.TestCase):
 
         with mock.patch.object(harvest, 'update_sets'):
             with mock.patch.object(harvest, 'models') as models:
-                models.Item.list.return_value = items
-                models.Format.list.return_value = formats
                 with LogCapture(harvest) as log:
-                    harvest.update_records(provider)
+                    harvest.update_records(provider, items, [u'ead'])
 
         models.Record.create_or_update.assert_called_once_with(
             'id2', 'ead', xml)
@@ -252,24 +281,20 @@ class TestUpdateRecords(unittest.TestCase):
         log.assert_emitted('crosswalk error')
 
     def test_deleted_record(self):
-        formats = [make_format(u'oai_dc')]
-        items = [make_item(u'some_item')]
         provider = mock.Mock()
         provider.get_record.return_value = None
 
         with mock.patch.object(harvest, 'update_sets'):
             with mock.patch.object(harvest, 'models') as models:
-                models.Format.list.return_value = formats
-                models.Item.list.return_value = items
-                harvest.update_records(provider, since=None)
+                harvest.update_records(
+                    provider, [u'some_item'], [u'oai_dc'])
 
         models.Record.mark_as_deleted.assert_called_once_with(
             u'some_item', u'oai_dc',
         )
 
     def test_update_sets_fails(self):
-        formats = [make_format(u'oai_dc')]
-        items = map(make_item, [u'item1', u'item2'])
+        items = [u'item1', u'item2']
 
         provider = mock.Mock()
         provider.get_record.return_value = '<oai_dc:dc>...</oai_dc:dc>'
@@ -278,22 +303,20 @@ class TestUpdateRecords(unittest.TestCase):
                 update_sets_mock):
             update_sets_mock.side_effect = ValueError('invalid set spec')
             with mock.patch.object(harvest, 'models') as models:
-                models.Item.list.return_value = items
-                models.Format.list.return_value = formats
                 with LogCapture(harvest) as log:
-                    harvest.update_records(provider)
+                    harvest.update_records(provider, items, [u'oai_dc'])
 
         self.assertItemsEqual(
             update_sets_mock.mock_calls,
-            [mock.call(provider, id_) for id_ in [u'item1', u'item2']],
+            [mock.call(provider, id_, False)
+             for id_ in [u'item1', u'item2']],
         )
         log.assert_emitted('Failed to update item "item1"')
         log.assert_emitted('Failed to update item "item2"')
         log.assert_emitted('invalid set spec')
 
     def test_delete_single_record(self):
-        formats = map(make_format, [u'oai_dc', u'ead', u'ddi'])
-        items = [make_item(u'pelle')]
+        formats = [u'oai_dc', u'ead', u'ddi']
         def get_record(id_, prefix):
             if prefix == u'oai_dc':
                 raise ValueError('invalid data')
@@ -306,14 +329,37 @@ class TestUpdateRecords(unittest.TestCase):
         provider.get_sets.return_value = []
 
         with mock.patch.object(harvest, 'models') as models:
-            models.Format.list.return_value = formats
-            models.Item.list.return_value = items
-            harvest.update_records(provider, since=None)
+            harvest.update_records(provider, [u'pelle'], formats)
 
         models.Record.mark_as_deleted.assert_called_once_with(
             u'pelle', u'ead')
         models.Record.create_or_update.assert_called_once_with(
             u'pelle', u'ddi', 'data')
+
+    def test_dry_run(self):
+        time = datetime(2014, 2, 4, 10, 54, 27)
+
+        provider = mock.Mock()
+        provider.get_record.return_value = '<xml ... />'
+        provider.has_changed.return_value = True
+
+        with LogCapture(harvest) as log:
+            with mock.patch.object(harvest, 'models') as models:
+                with mock.patch.object(harvest, 'update_sets') as (
+                        update_sets_mock):
+                    harvest.update_records(
+                        provider,
+                        ['item1'],
+                        ['oai_dc'],
+                        time,
+                        dry_run=True,
+                    )
+
+        update_sets_mock.assert_called_once_with(provider, u'item1', True)
+        self.assertEqual(models.Record.create_or_update.mock_calls, [])
+        self.assertEqual(models.commit.mock_calls, [])
+
+        log.assert_emitted('Updated 1 record.')
 
 
 class TestUpdateSets(unittest.TestCase):
@@ -352,3 +398,20 @@ class TestUpdateSets(unittest.TestCase):
         item = models.Item.get.return_value
         item.clear_sets.assert_called_once_with()
         self.assertEqual(item.add_to_set.mock_calls, [])
+
+    def test_dry_run(self):
+        provider = mock.Mock()
+        provider.get_sets.return_value = [(u'a', 'Set Name')]
+
+        with mock.patch.object(harvest, 'models') as models:
+            models.Item
+            harvest.update_sets(
+                provider,
+                'oai:example.org:item',
+                dry_run=True,
+            )
+        item_mock = models.Item.get.return_value
+
+        self.assertEqual(item_mock.clear_sets.mock_calls, [])
+        self.assertEqual(models.Set.create_or_update.mock_calls, [])
+        self.assertEqual(item_mock.add_to_set.mock_calls, [])
