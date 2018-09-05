@@ -1,3 +1,7 @@
+
+We're concentrating on Kuha2 nowdays, see https://bitbucket.org/account/user/tietoarkisto/projects/KUH
+
+
 Kuha OAI-PMH Server
 ===================
 
