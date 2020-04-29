@@ -1,5 +1,5 @@
 
-We're concentrating on Kuha2 nowdays, see https://bitbucket.org/account/user/tietoarkisto/projects/KUH
+We're concentrating on Kuha2 nowdays, see https://bitbucket.org/tietoarkisto/workspace/projects/KUH
 
 
 Kuha OAI-PMH Server
